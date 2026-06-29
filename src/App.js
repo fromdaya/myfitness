@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect } from 'react'
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import Layout from './components/Layout'
 import Login from './pages/Login'
@@ -17,32 +18,49 @@ import ClientProgram from './pages/client/Program'
 import ClientProgress from './pages/client/Progress'
 import ClientChat from './pages/client/Chat'
 
+const HOME = { admin: '/admin', trainer: '/trainer', client: '/client' }
+
 function RoleRouter() {
   const { user, profile, profileError, loading } = useAuth()
+  const navigate = useNavigate()
 
-  // Loading screen
+  // Once profile loads, redirect to correct home if on wrong path
+  useEffect(() => {
+    if (!profile) return
+    const home = HOME[profile.role]
+    const path = window.location.pathname
+    // If on root or on wrong role's path, redirect
+    if (path === '/' || (!path.startsWith(home))) {
+      navigate(home, { replace: true })
+    }
+  }, [profile, navigate])
+
   if (loading) return (
     <div style={s.splash}>
       <div style={{ fontSize: 56 }}>💪</div>
       <div style={{ fontSize: 22, fontWeight: 800, color: '#1a56db' }}>MyFitness</div>
-      <div style={{ color: '#9ca3af', fontSize: 14 }}>Loading...</div>
+      <div style={{ color: '#9ca3af', fontSize: 14, marginTop: 4 }}>Loading your profile...</div>
     </div>
   )
 
-  // Not logged in
   if (!user) return <Login />
 
-  // Logged in but profile failed to load
   if (!profile) return (
     <div style={s.splash}>
       <div style={{ fontSize: 48 }}>⚠️</div>
-      <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Profile not found</div>
-      <div style={{ color: '#6b7280', fontSize: 14, maxWidth: 320, textAlign: 'center', lineHeight: 1.7 }}>
-        {profileError || 'Your profile could not be loaded.'}<br />
-        Make sure you ran the SQL schema in Supabase and updated your role.
+      <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 8, textAlign: 'center' }}>
+        Profile not found
       </div>
-      <button onClick={() => window.location.reload()} style={s.retryBtn}>Retry</button>
-      <button onClick={() => { require('./supabase').supabase.auth.signOut() }} style={s.signoutBtn}>Sign Out</button>
+      <div style={{ color: '#6b7280', fontSize: 14, maxWidth: 320, textAlign: 'center', lineHeight: 1.7 }}>
+        {profileError
+          ? <>Error: {profileError}</>
+          : <>Your profile row is missing in the database.<br />Make sure the SQL schema ran successfully in Supabase.</>
+        }
+      </div>
+      <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+        <button onClick={() => window.location.reload()} style={s.btn}>Retry</button>
+        <button onClick={() => supabaseSignOut()} style={s.btnGhost}>Sign Out</button>
+      </div>
     </div>
   )
 
@@ -51,40 +69,45 @@ function RoleRouter() {
   return (
     <Layout>
       <Routes>
-        {/* Default redirect by role */}
-        <Route path="/" element={<Navigate to={role === 'admin' ? '/admin' : role === 'trainer' ? '/trainer' : '/client'} replace />} />
+        <Route path="/" element={<Navigate to={HOME[role] || '/client'} replace />} />
 
-        {/* Admin routes */}
-        <Route path="/admin" element={role === 'admin' ? <AdminDashboard /> : <Navigate to="/" replace />} />
-        <Route path="/admin/trainers" element={role === 'admin' ? <AdminTrainers /> : <Navigate to="/" replace />} />
-        <Route path="/admin/clients" element={role === 'admin' ? <AdminClients /> : <Navigate to="/" replace />} />
-        <Route path="/admin/programs" element={role === 'admin' ? <AdminPrograms /> : <Navigate to="/" replace />} />
-        <Route path="/admin/exercises" element={role === 'admin' ? <AdminExercises /> : <Navigate to="/" replace />} />
+        {/* Admin */}
+        <Route path="/admin" element={role === 'admin' ? <AdminDashboard /> : <Navigate to={HOME[role]} replace />} />
+        <Route path="/admin/trainers" element={role === 'admin' ? <AdminTrainers /> : <Navigate to={HOME[role]} replace />} />
+        <Route path="/admin/clients" element={role === 'admin' ? <AdminClients /> : <Navigate to={HOME[role]} replace />} />
+        <Route path="/admin/programs" element={role === 'admin' ? <AdminPrograms /> : <Navigate to={HOME[role]} replace />} />
+        <Route path="/admin/exercises" element={role === 'admin' ? <AdminExercises /> : <Navigate to={HOME[role]} replace />} />
 
-        {/* Trainer routes */}
-        <Route path="/trainer" element={role === 'trainer' ? <TrainerDashboard /> : <Navigate to="/" replace />} />
-        <Route path="/trainer/clients" element={role === 'trainer' ? <TrainerClients /> : <Navigate to="/" replace />} />
-        <Route path="/trainer/programs" element={role === 'trainer' ? <TrainerPrograms /> : <Navigate to="/" replace />} />
-        <Route path="/trainer/exercises" element={role === 'trainer' ? <TrainerExercises /> : <Navigate to="/" replace />} />
-        <Route path="/trainer/chat" element={role === 'trainer' ? <TrainerChat /> : <Navigate to="/" replace />} />
+        {/* Trainer */}
+        <Route path="/trainer" element={role === 'trainer' ? <TrainerDashboard /> : <Navigate to={HOME[role]} replace />} />
+        <Route path="/trainer/clients" element={role === 'trainer' ? <TrainerClients /> : <Navigate to={HOME[role]} replace />} />
+        <Route path="/trainer/programs" element={role === 'trainer' ? <TrainerPrograms /> : <Navigate to={HOME[role]} replace />} />
+        <Route path="/trainer/exercises" element={role === 'trainer' ? <TrainerExercises /> : <Navigate to={HOME[role]} replace />} />
+        <Route path="/trainer/chat" element={role === 'trainer' ? <TrainerChat /> : <Navigate to={HOME[role]} replace />} />
 
-        {/* Client routes */}
-        <Route path="/client" element={role === 'client' ? <ClientDashboard /> : <Navigate to="/" replace />} />
-        <Route path="/client/program" element={role === 'client' ? <ClientProgram /> : <Navigate to="/" replace />} />
-        <Route path="/client/progress" element={role === 'client' ? <ClientProgress /> : <Navigate to="/" replace />} />
-        <Route path="/client/chat" element={role === 'client' ? <ClientChat /> : <Navigate to="/" replace />} />
+        {/* Client */}
+        <Route path="/client" element={role === 'client' ? <ClientDashboard /> : <Navigate to={HOME[role]} replace />} />
+        <Route path="/client/program" element={role === 'client' ? <ClientProgram /> : <Navigate to={HOME[role]} replace />} />
+        <Route path="/client/progress" element={role === 'client' ? <ClientProgress /> : <Navigate to={HOME[role]} replace />} />
+        <Route path="/client/chat" element={role === 'client' ? <ClientChat /> : <Navigate to={HOME[role]} replace />} />
 
         {/* Catch all */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to={HOME[role] || '/'} replace />} />
       </Routes>
     </Layout>
   )
 }
 
+async function supabaseSignOut() {
+  const { supabase } = await import('./supabase')
+  await supabase.auth.signOut()
+  window.location.href = '/'
+}
+
 const s = {
   splash: { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12, background: '#f9fafb' },
-  retryBtn: { marginTop: 8, padding: '10px 24px', background: '#1a56db', color: 'white', border: 'none', borderRadius: 10, fontSize: 15, fontWeight: 600, cursor: 'pointer' },
-  signoutBtn: { padding: '8px 24px', background: 'transparent', color: '#9ca3af', border: '1px solid #e5e7eb', borderRadius: 10, fontSize: 14, cursor: 'pointer' }
+  btn: { padding: '10px 24px', background: '#1a56db', color: 'white', border: 'none', borderRadius: 10, fontSize: 15, fontWeight: 600, cursor: 'pointer' },
+  btnGhost: { padding: '10px 24px', background: 'transparent', color: '#9ca3af', border: '1px solid #e5e7eb', borderRadius: 10, fontSize: 14, cursor: 'pointer' }
 }
 
 export default function App() {
