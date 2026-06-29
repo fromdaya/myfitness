@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../../supabase'
 import { useAuth } from '../../contexts/AuthContext'
 
@@ -8,12 +8,8 @@ export default function ClientDashboard() {
   const [dayData, setDayData] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+  const loadTodayWorkout = useCallback(async () => {
     if (!profile) return
-    loadTodayWorkout()
-  }, [profile])
-
-  async function loadTodayWorkout() {
     const { data: cp } = await supabase
       .from('client_programs')
       .select('*, program:programs(*)')
@@ -33,7 +29,11 @@ export default function ClientDashboard() {
 
     setDayData(day)
     setLoading(false)
-  }
+  }, [profile])
+
+  useEffect(() => {
+    loadTodayWorkout()
+  }, [loadTodayWorkout])
 
   if (loading) return <div style={s.loading}>Loading your workout...</div>
 
@@ -71,7 +71,7 @@ export default function ClientDashboard() {
               <h2 style={s.h2}>Today's Workout</h2>
               {dayData.focus && <p style={s.focus}>{dayData.focus}</p>}
               <div style={s.exList}>
-                {dayData.exercises?.map((item, i) => (
+                {dayData.exercises?.map((item) => (
                   <div key={item.id} style={s.exCard}>
                     <div style={s.exName}>{item.exercise?.name || 'Exercise'}</div>
                     <div style={s.exDetail}>

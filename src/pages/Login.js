@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
-import { useNavigate } from 'react-router-dom'
+
 
 export default function Login() {
   const { signIn, signUp } = useAuth()
-  const navigate = useNavigate()
+  
   const [mode, setMode] = useState('login')
   const [form, setForm] = useState({ email: '', password: '', fullName: '', role: 'client' })
   const [error, setError] = useState('')
