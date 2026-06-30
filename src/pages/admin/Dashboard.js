@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom'
 export default function AdminDashboard() {
   const { profile } = useAuth()
   const navigate = useNavigate()
-  const [stats, setStats] = useState({ trainers:0, clients:0, programs:0, exercises:0, directClients:0 })
+  const [stats, setStats] = useState({ trainers:0, clients:0, directClients:0, programs:0, exercises:0 })
 
   useEffect(() => {
     async function load() {
@@ -17,7 +17,13 @@ export default function AdminDashboard() {
         supabase.from('programs').select('id', { count:'exact', head:true }),
         supabase.from('exercises').select('id', { count:'exact', head:true }),
       ])
-      setStats({ trainers:t.count||0, clients:c.count||0, directClients:dc.count||0, programs:p.count||0, exercises:e.count||0 })
+      setStats({
+        trainers: t.count || 0,
+        clients: c.count || 0,
+        directClients: dc.count || 0,
+        programs: p.count || 0,
+        exercises: e.count || 0
+      })
     }
     load()
   }, [])
@@ -38,8 +44,10 @@ export default function AdminDashboard() {
       <div style={s.grid}>
         {cards.map(c => (
           <div key={c.label} style={s.card} onClick={() => navigate(c.path)}>
-            <div style={{ ...s.iconWrap, background:c.color+'15' }}><span style={{ fontSize:26 }}>{c.icon}</span></div>
-            <div style={{ ...s.stat, color:c.color }}>{c.value}</div>
+            <div style={{ ...s.iconWrap, background: c.color + '15' }}>
+              <span style={{ fontSize:26 }}>{c.icon}</span>
+            </div>
+            <div style={{ ...s.stat, color: c.color }}>{c.value}</div>
             <div style={s.cardLabel}>{c.label}</div>
           </div>
         ))}
@@ -55,7 +63,7 @@ export default function AdminDashboard() {
             { label:'Build Programs', desc:'Create training programs', icon:'📋', path:'/admin/programs', color:'#0e9f6e' },
           ].map(a => (
             <div key={a.label} style={s.actionCard} onClick={() => navigate(a.path)}>
-              <div style={{ ...s.actionIcon, background:a.color+'15' }}>{a.icon}</div>
+              <div style={{ ...s.actionIcon, background: a.color + '15' }}>{a.icon}</div>
               <div>
                 <div style={{ fontWeight:600, fontSize:14 }}>{a.label}</div>
                 <div style={{ fontSize:12, color:'#9ca3af', marginTop:2 }}>{a.desc}</div>
@@ -73,7 +81,7 @@ const s = {
   h2: { fontSize:18, fontWeight:700, marginBottom:14 },
   sub: { color:'#6b7280', marginBottom:28, fontSize:15 },
   grid: { display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(140px,1fr))', gap:14, marginBottom:32 },
-  card: { background:'white', borderRadius:14, padding:'1.25rem', boxShadow:'0 1px 4px rgba(0,0,0,0.06)', display:'flex', flexDirection:'column', alignItems:'center', gap:6, cursor:'pointer', transition:'transform .15s' },
+  card: { background:'white', borderRadius:14, padding:'1.25rem', boxShadow:'0 1px 4px rgba(0,0,0,0.06)', display:'flex', flexDirection:'column', alignItems:'center', gap:6, cursor:'pointer' },
   iconWrap: { width:50, height:50, borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center' },
   stat: { fontSize:32, fontWeight:800 },
   cardLabel: { fontSize:12, color:'#6b7280', fontWeight:500, textAlign:'center' },
